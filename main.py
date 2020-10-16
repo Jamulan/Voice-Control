@@ -4,7 +4,7 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 from vosk import Model, KaldiRecognizer
 from queue import Queue
-from time import sleep
+from pythonActions import Actions
 import threading
 import os
 import pyaudio
@@ -19,34 +19,6 @@ inputQueueLock = threading.RLock()
 outputQueue = Queue()
 outputQueueLock = threading.RLock()
 
-
-class Actions:
-    database: dict
-    keyword: str
-    commands: dict
-    responses: dict
-    pythonActions: dict
-
-    def timer(self, secs):
-        sleep(secs)
-        return "five min timer done"
-
-    def loadDatabase(self, x):
-        with open("interactionDatabase.json", 'r') as f:
-            self.database = json.loads(f.read())
-            self.keyword = str(self.database['keyword'])
-            self.commands = self.database['commands']
-            self.responses = self.database['responses']
-            self.pythonActions = self.database['python actions']
-        return "database loaded"
-
-    def count(self, x):
-        output = ""
-        for i in range(x[0], x[1]):
-            output += str(i+1) + " "
-        return output
-
-
 actions = Actions()
 
 def worker():
@@ -58,6 +30,7 @@ def worker():
         # process item
         j = json.loads(item)
         words = []
+        output = ''
         if 'result' in j.keys():
             for x in j['result']:
                 words.append(x['word'])
@@ -67,17 +40,19 @@ def worker():
             tmp = ""
             for word in words[i + 1:]:
                 tmp += word + " "
-            tmp = tmp[:-1] # get rid of the last space
+            tmp = tmp[:-1]  # get rid of the last space
             if tmp in actions.responses.keys():
                 output = actions.responses[tmp]
             elif tmp in actions.commands.keys():
-                output = subprocess.run(actions.commands[tmp])
+                output = str(subprocess.run(actions.commands[tmp], capture_output=True, encoding='utf-8').stdout)
             elif tmp in actions.pythonActions.keys():
                 output = getattr(Actions, actions.pythonActions[tmp][0])(actions, actions.pythonActions[tmp][1])
             else:
                 output = "unknown command: " + tmp
         else:
-            output = j
+            output = "unknown string: " + str(j['text'])
+            if 'text' in j.keys() and j['text'] == '':
+                output = ''
         # send out the output
         outputQueueLock.acquire()
         outputQueue.put(output)
@@ -121,4 +96,8 @@ if __name__ == '__main__':
     d.start()
 
     while True:
-        print(outputQueue.get())
+        output = outputQueue.get()
+        if output != '':
+            print(output)
+            subprocess.run(["flite", "-voice", "slt", "-t", output])
+        outputQueue.task_done()

@@ -1,4 +1,5 @@
 {
+  "path" : "interactionDatabase.json",
   "keyword" : "computer",
   "commands" : {
     "what is the date" : ["date"]
@@ -6,11 +7,14 @@
   "responses" : {
     "tell me a joke": "I don't know any",
     "what is your favorite color": "#00FF00",
-    "how are you" : "I do not know how I came to be I just am"
+    "how are you" : "I do not know how I came to be I just am",
+    "ping" : "pong",
+    "paying" : "pong"
   },
   "python actions" : {
-    "load interaction database" : ["loadDatabase", 1],
-    "set five min timer" : ["timer", 300],
+    "load database" : ["loadDatabase", 1],
+    "set one minute timer" : ["timer", 60],
+    "set thirty second timer" : ["timer", 30],
     "count to five" : ["count", [0, 5]]
   }
 
